@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Pulse Tracker</string>
+    <string name="app_display_name">Pulse Tracker</string>
+
+    <string name="login_subtitle">Activity, environment and medicine reminders — all on your device.</string>
+    <string name="login_display_name">Full name</string>
+    <string name="login_username">Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_create_account">Create account</string>
+    <string name="login_need_account">New here? Create an account</string>
+    <string name="login_have_account">Already have an account? Sign in</string>
+    <string name="login_error_name">Please enter your name</string>
+    <string name="login_error_username">3–32 letters, digits, dots or underscores</string>
+    <string name="login_error_password">Password must be at least 6 characters</string>
+
+    <string name="channel_tracking_name">Activity tracking</string>
+    <string name="channel_tracking_desc">Shows while a tracking session is running</string>
+    <string name="channel_reminders_name">Medicine reminders</string>
+    <string name="channel_reminders_desc">Alerts 15 minutes before a scheduled dose</string>
+    <string name="tracking_notification_title">Tracking session in progress</string>
+    <string name="tracking_action_stop">Stop</string>
+    <string name="reminder_title">Time for %1$s soon</string>
+    <string name="reminder_body">%1$s scheduled at %2$s — in 15 minutes.</string>
+    <string name="reminder_test_title">Test reminder</string>
+    <string name="reminder_test_body">Reminders are working, even with the app closed.</string>
+</resources>
