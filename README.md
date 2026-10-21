@@ -6,8 +6,8 @@ An Android app that uses the phone's sensors to detect activity (stationary / wa
 
 | | |
 |---|---|
-| React Native | 0.88 (New Architecture, Hermes) |
-| Native | Kotlin 2.2, minSdk 26, targetSdk 36 |
+| React Native | 0.86.3 (New Architecture, Hermes) |
+| Native | Kotlin 2.1, minSdk 26, targetSdk 36 |
 | Storage | SQLite (native `SQLiteOpenHelper`) |
 | UI | Material 3 colour system, light and dark themes |
 
@@ -26,7 +26,7 @@ An Android app that uses the phone's sensors to detect activity (stationary / wa
 | Native **login** (Kotlin, Material Components) integrated with RN | `auth/LoginActivity.kt`, `bridge/AuthModule.kt` |
 | **Bonus:** real-time charts (motion, light, pressure) | `src/components/LineChart.tsx` |
 | **Bonus:** CSV export of a session through the share sheet | `export/CsvExporter.kt` |
-| Extra: map-free SVG route sketch (works offline / without a Maps key), estimated altitude from the barometer, step cadence, pace, "test reminder" button, dark mode | — |
+| Extra: map-free route sketch (works offline / without a Maps key), estimated altitude from the barometer, step cadence, pace, "test reminder" button, dark mode | — |
 
 ---
 
@@ -73,7 +73,7 @@ The assessment requires tracking to keep going while the app is minimised, and r
 | `ReminderModule` | `getMedicines`, `addMedicine`, `setMedicineEnabled`, `deleteMedicine`, `getReminderStatus`, `openExactAlarmSettings`, `scheduleTestReminder` |
 | `AuthModule` | `getCurrentUser`, `logout` |
 
-The modules are classic `ReactContextBaseJavaModule`s registered through `BaseReactPackage`. On RN 0.88 they run through the New Architecture interop layer. TypeScript shapes for every payload are in `src/native/types.ts`.
+The modules are classic `ReactContextBaseJavaModule`s registered through `BaseReactPackage`. On RN 0.86 they run through the New Architecture interop layer. TypeScript shapes for every payload are in `src/native/types.ts`.
 
 ---
 
@@ -110,7 +110,7 @@ SQLite tables: `users`, `sessions`, `samples` (5-second sensor readings), `locat
 ### UI (React Native)
 - Bottom tabs (**Dashboard, Map, History, Medicines**) plus a stack screen for session details.
 - `TrackingContext` holds the only event subscription and keeps a 90-second rolling series for the live charts. Light and pressure update on the dashboard even when no session is running, through a lightweight sensor preview that pauses while the app is in the background.
-- The charts, icons and route sketch are drawn with `react-native-svg`, so no chart or icon-font libraries are needed.
+- The charts, icons and route sketch are drawn with plain React Native `View`s and Unicode glyphs, so no chart, SVG or icon-font libraries are needed.
 
 ---
 
@@ -119,7 +119,7 @@ SQLite tables: `users`, `sessions`, `samples` (5-second sensor readings), `locat
 ### Prerequisites
 - **Node.js ≥ 22.11**
 - **JDK 17** (Android Studio's bundled JBR works)
-- **Android SDK** with Platform **36/37** and Build-Tools 37 (install through Android Studio's SDK Manager)
+- **Android SDK** with Platform **36** and Build-Tools 36 (install through Android Studio's SDK Manager)
 - A physical Android device is strongly recommended. Emulators have no real accelerometer, light or pressure data.
 
 ### Google Maps key (optional)
@@ -129,7 +129,7 @@ The map uses the Google Maps SDK. Create a key with **Maps SDK for Android** ena
 MAPS_API_KEY=your_key_here
 ```
 
-`local.properties` is git-ignored. Without a key the map tiles stay blank, but the **Sketch** toggle draws the route offline with SVG.
+`local.properties` is git-ignored. Without a key the map tiles stay blank, but the **Sketch** toggle draws the route offline.
 
 ### Install and run
 
@@ -198,3 +198,8 @@ src/
 - Android 14+ blocks starting a location foreground service from the background. If the OS kills the process, the session resumes the next time the user opens the app rather than in the background.
 - Reminders repeat daily. Weekday schedules and "mark as taken" history would be natural additions.
 - Android only. The iOS folder is the untouched template.
+
+## Build notes
+- **`react-native-maps` is pinned to 1.26.20.** Version 1.26.0 ships a CMake file that skips React Native's standard compile options (`RN_SERIALIZABLE_STATE`), so its Fabric props structs had a different memory layout from `libreactnative.so`. The app crashed with `SIGSEGV` at startup while registering components. 1.26.20 fixes the CMake file.
+- If you upgrade a native UI library and the app crashes at launch inside `ComponentDescriptorRegistry::add` / `RawPropsParser::prepare<…Props>`, check that library's `android/src/main/jni/CMakeLists.txt` calls `target_compile_reactnative_options(...)`.
+- On Windows, keep the Android SDK and project paths free of spaces where you can (for example, use a directory junction). `sdkmanager` scripts fail on paths with spaces.

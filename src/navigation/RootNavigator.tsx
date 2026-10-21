@@ -38,6 +38,7 @@ function Tabs() {
           borderTopColor: colors.outlineVariant,
         },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarAllowFontScaling: false,
         tabBarIcon: tabIcon(route.name),
       })}
     >

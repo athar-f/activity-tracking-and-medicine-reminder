@@ -19,7 +19,7 @@ const GLYPHS = {
   add: '+',
   delete: '🗑️',
   share: '⤴',
-  logout: '⎋',
+  logout: '🚪',
   bell: '🔔',
   chevronRight: '›',
   warning: '⚠️',
