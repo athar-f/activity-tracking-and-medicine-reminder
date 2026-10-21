@@ -1,6 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { spacing, useAppTheme } from '../theme/theme';
 
 interface Props {
@@ -13,7 +12,9 @@ interface Props {
   emptyText?: string;
 }
 
-/** Lightweight area/line chart on react-native-svg; auto-scales to the data range. */
+const MAX_BARS = 90;
+
+/** Sparkline drawn with plain Views (one bar per sample), auto-scaled to the data range. */
 export function LineChart({
   data,
   color,
@@ -24,37 +25,27 @@ export function LineChart({
   emptyText,
 }: Props) {
   const { colors } = useAppTheme();
-  const [width, setWidth] = useState(0);
-  const gradientId = useMemo(() => `grad-${title.replace(/\W/g, '')}`, [title]);
 
-  const { line, area, min, max } = useMemo(() => {
-    if (data.length < 2 || width === 0)
-      return { line: '', area: '', min: 0, max: 0 };
-    let lo = Math.min(...data);
-    let hi = Math.max(...data);
-    if (hi - lo < 1e-6) {
-      lo -= 1;
-      hi += 1;
+  const { bars, min, max } = useMemo(() => {
+    if (data.length < 2) return { bars: [] as number[], min: 0, max: 0 };
+    // Downsample long histories by averaging buckets so bars stay readable.
+    const bucket = Math.ceil(data.length / MAX_BARS);
+    const values: number[] = [];
+    for (let i = 0; i < data.length; i += bucket) {
+      const slice = data.slice(i, i + bucket);
+      values.push(slice.reduce((s, v) => s + v, 0) / slice.length);
     }
-    const pad = (hi - lo) * 0.1;
-    lo -= pad;
-    hi += pad;
-    const stepX = width / (data.length - 1);
-    const y = (v: number) => height - ((v - lo) / (hi - lo)) * height;
-    const points = data.map(
-      (v, i) => `${(i * stepX).toFixed(1)},${y(v).toFixed(1)}`,
-    );
-    const linePath = `M${points.join(' L')}`;
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const span = hi - lo < 1e-6 ? 1 : hi - lo;
     return {
-      line: linePath,
-      area: `${linePath} L${width},${height} L0,${height} Z`,
+      // 15% floor so the smallest value is still visible.
+      bars: values.map(v => 0.15 + ((v - lo) / span) * 0.85),
       min: Math.min(...data),
       max: Math.max(...data),
     };
-  }, [data, width, height]);
+  }, [data]);
 
-  const onLayout = (e: LayoutChangeEvent) =>
-    setWidth(e.nativeEvent.layout.width);
   const latest = data.length ? data[data.length - 1] : null;
 
   return (
@@ -67,47 +58,37 @@ export function LineChart({
           {latest == null ? '—' : `${latest.toFixed(decimals)} ${unit}`}
         </Text>
       </View>
-      <View style={{ height }} onLayout={onLayout}>
-        {line ? (
-          <Svg width={width} height={height}>
-            <Defs>
-              <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={color} stopOpacity={0.35} />
-                <Stop offset="1" stopColor={color} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
-            {[0.25, 0.5, 0.75].map(f => (
-              <Line
-                key={f}
-                x1={0}
-                x2={width}
-                y1={height * f}
-                y2={height * f}
-                stroke={colors.outlineVariant}
-                strokeWidth={0.5}
-                strokeDasharray="4 4"
-              />
-            ))}
-            <Path d={area} fill={`url(#${gradientId})`} />
-            <Path
-              d={line}
-              stroke={color}
-              strokeWidth={2}
-              fill="none"
-              strokeLinejoin="round"
+      {bars.length ? (
+        <View
+          style={[styles.plot, { height, borderColor: colors.outlineVariant }]}
+        >
+          {bars.map((f, i) => (
+            <View
+              key={i}
+              style={[
+                styles.bar,
+                i === bars.length - 1 ? styles.latestBar : styles.pastBar,
+                {
+                  height: `${f * 100}%`,
+                  backgroundColor: color,
+                },
+              ]}
             />
-          </Svg>
-        ) : (
-          <View
-            style={[styles.placeholder, { borderColor: colors.outlineVariant }]}
-          >
-            <Text style={{ color: colors.onSurfaceVariant }}>
-              {emptyText ?? 'Collecting data…'}
-            </Text>
-          </View>
-        )}
-      </View>
-      {line ? (
+          ))}
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.placeholder,
+            { height, borderColor: colors.outlineVariant },
+          ]}
+        >
+          <Text style={{ color: colors.onSurfaceVariant }}>
+            {emptyText ?? 'Collecting data…'}
+          </Text>
+        </View>
+      )}
+      {bars.length ? (
         <Text style={[styles.range, { color: colors.onSurfaceVariant }]}>
           min {min.toFixed(decimals)} · max {max.toFixed(decimals)} {unit}
         </Text>
@@ -124,8 +105,16 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 13, fontWeight: '600' },
   value: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  plot: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 1,
+    borderBottomWidth: 1,
+  },
+  bar: { flex: 1, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
+  latestBar: { opacity: 1 },
+  pastBar: { opacity: 0.55 },
   placeholder: {
-    flex: 1,
     borderRadius: 8,
     borderWidth: 1,
     borderStyle: 'dashed',

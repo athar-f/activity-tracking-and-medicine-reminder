@@ -1,12 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 import type { GeoPoint } from '../native/types';
 import { useAppTheme } from '../theme/theme';
 
+const MAX_POINTS = 200;
+const STROKE = 4;
+const DOT = 12;
+
 /**
  * Map-free route preview: projects the GPS polyline (equirectangular, fine at walking scale)
- * into the available box. Used in history cards and as a fallback when no Maps key is set.
+ * into the available box and draws each segment as a rotated View. Works offline and without
+ * a Maps key.
  */
 export function RouteSketch({
   route,
@@ -18,12 +22,15 @@ export function RouteSketch({
   const { colors } = useAppTheme();
   const [width, setWidth] = useState(0);
 
-  const path = useMemo(() => {
+  const pts = useMemo(() => {
     if (route.length < 2 || width === 0) return null;
-    const lat0 = route[0].latitude;
-    const kx = Math.cos((lat0 * Math.PI) / 180);
-    const xs = route.map(p => p.longitude * kx);
-    const ys = route.map(p => p.latitude);
+    const step = Math.ceil(route.length / MAX_POINTS);
+    const sampled = route.filter(
+      (_, i) => i % step === 0 || i === route.length - 1,
+    );
+    const kx = Math.cos((sampled[0].latitude * Math.PI) / 180);
+    const xs = sampled.map(p => p.longitude * kx);
+    const ys = sampled.map(p => p.latitude);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);
@@ -33,15 +40,10 @@ export function RouteSketch({
     const scale = Math.min((width - pad * 2) / span, (height - pad * 2) / span);
     const offX = (width - (maxX - minX) * scale) / 2;
     const offY = (height - (maxY - minY) * scale) / 2;
-    const pts = xs.map((x, i) => ({
+    return xs.map((x, i) => ({
       x: offX + (x - minX) * scale,
       y: height - (offY + (ys[i] - minY) * scale),
     }));
-    return {
-      d: `M${pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L')}`,
-      start: pts[0],
-      end: pts[pts.length - 1],
-    };
   }, [route, width, height]);
 
   const onLayout = (e: LayoutChangeEvent) =>
@@ -55,24 +57,51 @@ export function RouteSketch({
       ]}
       onLayout={onLayout}
     >
-      {path ? (
-        <Svg width={width} height={height}>
-          <Path
-            d={path.d}
-            stroke={colors.primary}
-            strokeWidth={4}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {pts ? (
+        <>
+          {pts.slice(1).map((b, i) => {
+            const a = pts[i];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 0.5) return null;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.segment,
+                  {
+                    backgroundColor: colors.primary,
+                    width: len + STROKE / 2,
+                    left: (a.x + b.x) / 2 - (len + STROKE / 2) / 2,
+                    top: (a.y + b.y) / 2 - STROKE / 2,
+                    transform: [{ rotate: `${Math.atan2(dy, dx)}rad` }],
+                  },
+                ]}
+              />
+            );
+          })}
+          <View
+            style={[
+              styles.dot,
+              {
+                backgroundColor: colors.success,
+                left: pts[0].x - DOT / 2,
+                top: pts[0].y - DOT / 2,
+              },
+            ]}
           />
-          <Circle
-            cx={path.start.x}
-            cy={path.start.y}
-            r={6}
-            fill={colors.success}
+          <View
+            style={[
+              styles.dot,
+              {
+                backgroundColor: colors.error,
+                left: pts[pts.length - 1].x - DOT / 2,
+                top: pts[pts.length - 1].y - DOT / 2,
+              },
+            ]}
           />
-          <Circle cx={path.end.x} cy={path.end.y} r={6} fill={colors.error} />
-        </Svg>
+        </>
       ) : (
         <Text style={{ color: colors.onSurfaceVariant }}>
           {route.length === 1
@@ -90,5 +119,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  segment: { position: 'absolute', height: STROKE, borderRadius: STROKE / 2 },
+  dot: {
+    position: 'absolute',
+    width: DOT,
+    height: DOT,
+    borderRadius: DOT / 2,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
 });
