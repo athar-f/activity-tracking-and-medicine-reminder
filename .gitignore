@@ -76,3 +76,6 @@ yarn-error.log
 
 # Built APKs
 *.apk
+
+# Gradle daemon JVM pin written by Android Studio (project needs JDK 17)
+android/gradle/gradle-daemon-jvm.properties
