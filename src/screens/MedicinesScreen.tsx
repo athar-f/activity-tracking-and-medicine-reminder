@@ -1,5 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { AddMedicineSheet } from '../components/AddMedicineSheet';
 import { Icon } from '../components/Icon';
@@ -40,7 +50,25 @@ export function MedicinesScreen() {
     }, [load]),
   );
 
+  /**
+   * Android 13+ needs POST_NOTIFICATIONS at runtime. Ask in context; if the user has
+   * permanently denied it, send them to the app's settings page instead.
+   */
+  const ensureNotifications = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS !== 'android' || Number(Platform.Version) < 33) return true;
+    const permission = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
+    if (await PermissionsAndroid.check(permission)) return true;
+    const result = await PermissionsAndroid.request(permission);
+    if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      Linking.openSettings();
+    }
+    const granted = result === PermissionsAndroid.RESULTS.GRANTED;
+    if (granted) load();
+    return granted;
+  }, [load]);
+
   const add = async (input: NewMedicine) => {
+    await ensureNotifications();
     const created = await ReminderService.addMedicine(input);
     setMedicines(prev =>
       [...prev, created].sort(
@@ -76,6 +104,10 @@ export function MedicinesScreen() {
     ]);
 
   const testReminder = async () => {
+    if (!(await ensureNotifications())) {
+      setError('Allow notifications to receive medicine reminders.');
+      return;
+    }
     await ReminderService.scheduleTest(10);
     Alert.alert(
       'Test reminder scheduled',
@@ -100,7 +132,11 @@ export function MedicinesScreen() {
         />
       ) : null}
       {status && !status.notificationsEnabled ? (
-        <Banner message="Notifications are disabled, so reminders cannot be shown." />
+        <Banner
+          message="Notifications are off, so reminders can't be shown."
+          actionLabel="Allow"
+          onAction={ensureNotifications}
+        />
       ) : null}
       {status && !status.exactAlarmsAllowed ? (
         <Banner

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon B: activity rings around a medicine capsule. 108dp canvas, art inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ring tracks -->
+    <path android:strokeColor="#993C1D" android:strokeWidth="6" android:fillColor="#00000000"
+        android:pathData="M54,25a29,29 0,1 1,0 58a29,29 0,1 1,0 -58z" />
+    <path android:strokeColor="#993C1D" android:strokeWidth="6" android:fillColor="#00000000"
+        android:pathData="M54,34a20,20 0,1 1,0 40a20,20 0,1 1,0 -40z" />
+    <!-- Ring progress: outer 75% (white), inner 67% (yellow) -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M54,25A29,29 0,1 1,25,54" />
+    <path android:strokeColor="#FAC775" android:strokeWidth="6" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M54,34A20,20 0,1 1,36.2,63.1" />
+    <!-- Capsule -->
+    <group android:pivotX="54" android:pivotY="54" android:rotation="-45">
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M48,48h12a6,6 0,0 1,0 12h-12a6,6 0,0 1,0 -12z" />
+        <path android:fillColor="#FAC775"
+            android:pathData="M54,48h6a6,6 0,0 1,0 12h-6z" />
+    </group>
+</vector>
