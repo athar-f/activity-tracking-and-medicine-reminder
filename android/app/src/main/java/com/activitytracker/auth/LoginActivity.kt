@@ -168,7 +168,7 @@ class LoginActivity : AppCompatActivity() {
 
   private companion object {
     const val STATE_REGISTER_MODE = "register_mode"
-    const val MIN_PASSWORD_LENGTH = 6
-    val USERNAME_PATTERN = Regex("^[A-Za-z0-9_.]{3,32}$")
+    const val MIN_PASSWORD_LENGTH = 8
+    val USERNAME_PATTERN = Regex("^[A-Za-z0-9_.]{3,30}$")
   }
 }

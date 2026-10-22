@@ -11,8 +11,8 @@
     <string name="login_need_account">New here? Create an account</string>
     <string name="login_have_account">Already have an account? Sign in</string>
     <string name="login_error_name">Please enter your name</string>
-    <string name="login_error_username">3–32 letters, digits, dots or underscores</string>
-    <string name="login_error_password">Password must be at least 6 characters</string>
+    <string name="login_error_username">3–30 letters, digits, dots or underscores</string>
+    <string name="login_error_password">Password must be at least 8 characters</string>
 
     <string name="channel_tracking_name">Activity tracking</string>
     <string name="channel_tracking_desc">Shows while a tracking session is running</string>
